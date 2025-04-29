@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
 <head>
-    <title>21 Savage Fan Site</title>
+    <title>Delux Zuri Music</title>
     <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.min.css">
     <link rel="stylesheet" href="style.css">
@@ -14,55 +14,69 @@
         <a href="/logout" class="btn btn-default btn-sm">Logout</a>
     </div>
 
-    <div class="row">
+    <!-- Song Info Section -->
+    <div class="well text-center">
+        <h2><%= song.songTitle || "Limited Time Only!" %></h2>
+        <h3>By <%= song.artistName || "Zuri Lives" %></h3>
+        <h4>Produced by <%= song.producerName || "Qui90" %></h4>
+        <img src="<%= song.cloudinaryUrl %>" alt="Song Cover" style="max-width: 100%; margin-top: 10px;">
+    </div>
 
-        <!-- LOCAL INFORMATION -->
+    <div class="row">
+        <!-- User Info -->
         <div class="col-sm-6">
             <div class="well">
                 <h3><span class="fa fa-user"></span> Local</h3>
-
                 <% if (user.local.email) { %>
                     <p>
                         <strong>id</strong>: <%= user._id %><br>
                         <strong>email</strong>: <%= user.local.email %><br>
                         <strong>password</strong>: <%= user.local.password %>
                     </p>
-
                     <a href="/unlink/local" class="btn btn-default">Unlink</a>
                 <% } else { %>
                     <a href="/connect/local" class="btn btn-default">Connect Local</a>
                 <% } %>
-
             </div>
         </div>
+
+        <!-- Messages -->
         <div class="col-sm-6">
-          <h3>Messages</h3>
-          <ul class="messages">
-          <% for(var i=0; i<messages.length; i++) {%>
-            <li class="message">
-              <span><%= messages[i].name %></span>
-              <span><%= messages[i].msg %></span>
-              <span><%= messages[i].thumbUp %></span>
-              <span><i class="fa fa-thumbs-up" aria-hidden="true"></i></span>
-              <span><i class="fa fa-thumbs-down" aria-hidden="true"></i></span>
-              <span><i class="fa fa-trash" aria-hidden="true"></i></span>
-            </li>
-          <% } %>
-          </ul>
+            <h3>Messages</h3>
+            <ul class="messages list-unstyled">
+                <% for(var i=0; i<messages.length; i++) { %>
+                    <li class="message well">
+                        <strong><%= messages[i].name %>:</strong>
+                        <p><%= messages[i].msg %></p>
+                        <div>
+                            <span><%= messages[i].thumbUp %></span>
+                            <i class="fa fa-thumbs-up" aria-hidden="true"></i>
+                            <i class="fa fa-thumbs-down" aria-hidden="true"></i>
+                            <i class="fa fa-trash" aria-hidden="true"></i>
+                        </div>
+                    </li>
+                <% } %>
+            </ul>
 
-          <h2>Add a message</h2>
-        <% if (user.local.email) { %>
-          <form action="/messages" method="POST">
-            <input type="text" value="<%= user.local.email %>" name="name">
-            <input type="text" placeholder="message" name="msg">
-            <button type="submit">Submit</button>
-          </form>
+            <% if (user.local.email) { %>
+                <h4>Add a Message</h4>
+                <form action="/messages" method="POST" class="form-inline">
+                    <!-- Hidden song info fields -->
+                    <input type="hidden" name="artistName" value="<%= song.artistName || 'Zuri Lives' %>">
+                    <input type="hidden" name="songTitle" value="<%= song.songTitle || 'Limited Time Only!' %>">
+                    <input type="hidden" name="producerName" value="<%= song.producerName || 'Qui90' %>">
+
+                    <!-- Message form -->
+                    <input type="text" name="name" value="<%= user.local.email %>" class="form-control" readonly>
+                    <input type="text" name="msg" placeholder="Your message" class="form-control" required>
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                </form>
+            <% } %>
         </div>
-        <% } %>
+    </div> 
 
-</div>
+</div> 
 
 <script src="main.js"></script>
-
 </body>
 </html>

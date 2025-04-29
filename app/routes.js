@@ -1,117 +1,116 @@
-module.exports = function(app, passport, db) {
-
 // normal routes ===============================================================
 
-    // show the home page (will also have our login links)
-    app.get('/', function(req, res) {
-        res.render('index.ejs');
+app.get('/', (req, res) => {
+  res.render('index.ejs');
+});
+
+app.get('/profile', isLoggedIn, async (req, res) => {
+  try {
+    const messages = await Message.find().lean();
+    const latestSong = {
+      artistName: 'Zuri Lives',
+      songTitle: 'Limited Time Only!',
+      producerName: 'Qui90',
+      cloudinaryUrl: 'https://res.cloudinary.com/deeoimhbf/video/upload/v1745521393/06_Limited_Time_Only_Expert_Version_jgoemw.wav' // Replace with real Cloudinary URL
+    };
+    res.render('profile.ejs', {
+      user: req.user,
+      messages: messages,
+      song: latestSong
     });
-
-    // PROFILE SECTION =========================
-    app.get('/profile', isLoggedIn, function(req, res) {
-        db.collection('messages').find().toArray((err, result) => {
-          if (err) return console.log(err)
-          res.render('profile.ejs', {
-            user : req.user,
-            messages: result
-          })
-        })
-    });
-
-    // LOGOUT ==============================
-    app.get('/logout', function(req, res) {
-        req.logout(() => {
-          console.log('User has logged out!')
-        });
-        res.redirect('/');
-    });
-
-// message board routes ===============================================================
-
-    app.post('/messages', (req, res) => {
-      db.collection('messages').save({name: req.body.name, msg: req.body.msg, thumbUp: 0, thumbDown:0}, (err, result) => {
-        if (err) return console.log(err)
-        console.log('saved to database')
-        res.redirect('/profile')
-      })
-    })
-
-    app.put('/messages', (req, res) => {
-      db.collection('messages')
-      .findOneAndUpdate({name: req.body.name, msg: req.body.msg}, {
-        $set: {
-          thumbUp:req.body.thumbUp + 1
-        }
-      }, {
-        sort: {_id: -1},
-        upsert: true
-      }, (err, result) => {
-        if (err) return res.send(err)
-        res.send(result)
-      })
-    })
-
-    app.delete('/messages', (req, res) => {
-      db.collection('messages').findOneAndDelete({name: req.body.name, msg: req.body.msg}, (err, result) => {
-        if (err) return res.send(500, err)
-        res.send('Message deleted!')
-      })
-    })
-
-// =============================================================================
-// AUTHENTICATE (FIRST LOGIN) ==================================================
-// =============================================================================
-
-    // locally --------------------------------
-        // LOGIN ===============================
-        // show the login form
-        app.get('/login', function(req, res) {
-            res.render('login.ejs', { message: req.flash('loginMessage') });
-        });
-
-        // process the login form
-        app.post('/login', passport.authenticate('local-login', {
-            successRedirect : '/profile', // redirect to the secure profile section
-            failureRedirect : '/login', // redirect back to the signup page if there is an error
-            failureFlash : true // allow flash messages
-        }));
-
-        // SIGNUP =================================
-        // show the signup form
-        app.get('/signup', function(req, res) {
-            res.render('signup.ejs', { message: req.flash('signupMessage') });
-        });
-
-        // process the signup form
-        app.post('/signup', passport.authenticate('local-signup', {
-            successRedirect : '/profile', // redirect to the secure profile section
-            failureRedirect : '/signup', // redirect back to the signup page if there is an error
-            failureFlash : true // allow flash messages
-        }));
-
-// =============================================================================
-// UNLINK ACCOUNTS =============================================================
-// =============================================================================
-// used to unlink accounts. for social accounts, just remove the token
-// for local account, remove email and password
-// user account will stay active in case they want to reconnect in the future
-
-    // local -----------------------------------
-    app.get('/unlink/local', isLoggedIn, function(req, res) {
-        var user            = req.user;
-        user.local.email    = undefined;
-        user.local.password = undefined;
-        user.save(function(err) {
-            res.redirect('/profile');
-        });
-    });
-
-};
-
-// route middleware to ensure user is logged in
-function isLoggedIn(req, res, next) {
-    if (req.isAuthenticated())
-        return next();
-
+  } catch (err) {
+    console.error(err);
     res.redirect('/');
+  }
+});
+
+app.get('/logout', (req, res) => {
+  req.logout(() => {
+    console.log('User has logged out!');
+  });
+  res.redirect('/');
+});
+
+
+app.post('/messages', async (req, res) => {
+  try {
+    await Message.create({
+      name: req.body.name,
+      msg: req.body.msg,
+      artistName: req.body.artistName,    
+      songTitle: req.body.songTitle,      
+      producerName: req.body.producerName, 
+      thumbUp: 0,
+      thumbDown: 0
+    });
+    console.log('Message saved with song info');
+    res.redirect('/profile');
+  } catch (err) {
+    console.error(err);
+    res.redirect('/profile');
+  }
+});
+
+app.put('/messages', async (req, res) => {
+  try {
+    const updated = await Message.findOneAndUpdate(
+      { name: req.body.name, msg: req.body.msg },
+      { $inc: { thumbUp: 1 } },
+      { new: true }
+    );
+    res.json(updated);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send(err);
+  }
+});
+
+app.delete('/messages', async (req, res) => {
+  try {
+    await Message.findOneAndDelete({
+      name: req.body.name,
+      msg: req.body.msg
+    });
+    res.send('Message deleted!');
+  } catch (err) {
+    console.error(err);
+    res.status(500).send(err);
+  }
+});
+
+
+app.get('/login', (req, res) => {
+  res.render('login.ejs', { message: req.flash('loginMessage') });
+});
+
+app.post('/login', passport.authenticate('local-login', {
+  successRedirect: '/profile',
+  failureRedirect: '/login',
+  failureFlash: true
+}));
+
+app.get('/signup', (req, res) => {
+  res.render('signup.ejs', { message: req.flash('signupMessage') });
+});
+
+app.post('/signup', passport.authenticate('local-signup', {
+  successRedirect: '/profile',
+  failureRedirect: '/signup',
+  failureFlash: true
+}));
+
+app.get('/unlink/local', isLoggedIn, (req, res) => {
+  const user = req.user;
+  user.local.email = undefined;
+  user.local.password = undefined;
+  user.save((err) => {
+    res.redirect('/profile');
+  });
+});
+
+// middleware
+function isLoggedIn(req, res, next) {
+  if (req.isAuthenticated())
+    return next();
+  res.redirect('/');
 }
